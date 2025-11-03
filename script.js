@@ -436,8 +436,6 @@ function loadProject() {
   }
 
   const { sceneId } = findFirstSceneEntry(project.routes || {}, project.scenes || {});
-=======
-  const { sceneId } = findFirstSceneEntry(project.routes || {});
   selectedSceneId = sceneId;
   previewDialogueId = null;
 }
