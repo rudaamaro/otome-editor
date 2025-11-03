@@ -596,11 +596,16 @@ function buildPlayableHtml(data, options = {}) {
         gap: 12px;
         min-height: 140px;
         transition: transform 0.2s ease, min-height 0.2s ease;
+        pointer-events: auto;
       }
 
       .stage-textbox.choices-open {
         min-height: 210px;
         transform: translateY(-6px);
+      }
+
+      .stage-textbox * {
+        pointer-events: auto;
       }
 
       .stage-speaker {
