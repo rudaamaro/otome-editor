@@ -1021,7 +1021,6 @@ function buildPlayableHtml(data, options = {}) {
         progressRouteEl.textContent = "";
         progressSceneEl.textContent = "";
         progressStepEl.textContent = "";
-        return;
       } else {
         renderScene();
       }
