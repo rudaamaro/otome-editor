@@ -1,23 +1,77 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Editor de Personagem - Otome</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div id="container">
-    <!-- Canvas principal -->
-    <canvas id="preview" width="600" height="800"></canvas>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Otome Studio</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <h1>🎀 Otome Studio</h1>
+        <div class="topbar-actions">
+          <button id="openCharacterEditor" title="Abrir editor de personagem">🧍‍♀️ Editor de Personagem</button>
+          <button id="createRoute">➕ Criar rota</button>
+          <button id="createScene">🎬 Nova cena</button>
+        </div>
+      </header>
 
-    <!-- Painel de controle -->
-    <div id="controls">
-      <h2>🧍 Editor de Personagem</h2>
-      <div id="categoryList"></div>
-      <button id="btnSave">💾 Exportar PNG</button>
+      <main class="workspace">
+        <aside class="timeline-panel">
+          <h2>🗺️ Timeline &amp; Rotas</h2>
+          <div id="routeList"></div>
+        </aside>
+
+        <section class="stage-panel">
+          <div class="stage-toolbar">
+            <label class="file-button">
+              🌄 Definir background
+              <input type="file" id="backgroundInput" accept="image/*" />
+            </label>
+            <button id="clearBackground">Remover background</button>
+            <button id="addDialogue">➕ Diálogo</button>
+            <button id="addChoice">➕ Escolha</button>
+            <button id="addCharacterToScene">➕ Personagem na cena</button>
+            <button id="saveProject">💾 Salvar projeto</button>
+          </div>
+          <div id="stage" class="stage">
+            <div id="stageBackground" class="stage-background"></div>
+            <div id="sceneInstances" class="scene-instances"></div>
+          </div>
+        </section>
+
+        <aside class="inspector-panel">
+          <div id="sceneInspector" class="inspector"></div>
+          <div id="instanceInspector" class="inspector"></div>
+        </aside>
+      </main>
     </div>
-  </div>
 
-  <script src="script.js"></script>
-</body>
+    <div id="characterEditorOverlay" class="overlay hidden">
+      <div class="overlay-content">
+        <header class="overlay-header">
+          <h2>🧍‍♀️ Editor de Personagem</h2>
+          <button id="closeCharacterEditor">✖</button>
+        </header>
+        <div class="editor-body">
+          <div id="characterCanvasWrap" class="canvas-wrap">
+            <canvas id="preview" width="600" height="800"></canvas>
+          </div>
+          <div id="controls">
+            <div id="characterSelector"></div>
+            <div id="categoryList"></div>
+            <div class="editor-actions">
+              <input type="text" id="saveName" placeholder="Nome do personagem" />
+              <button id="btnSaveChar">Salvar personagem</button>
+              <button id="btnApplyToInstance" class="secondary">Aplicar na cena</button>
+              <button id="btnExportPNG">Exportar PNG</button>
+            </div>
+            <div id="savedList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
 </html>

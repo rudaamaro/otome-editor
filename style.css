@@ -1,210 +1,521 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f0f17;
+  --panel: #181826;
+  --accent: #ff7bc0;
+  --accent-strong: #ff52a8;
+  --text: #f5f5fb;
+  --muted: #8a8aa4;
+  --border: #2a2a3d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  background: #101010;
-  color: #fff;
-  font-family: "Segoe UI", sans-serif;
+  font-family: "Segoe UI", "Roboto", sans-serif;
+  background: radial-gradient(circle at top, #1a1a2a, #0c0c12 55%, #05050a);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+#app {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
   align-items: center;
-  height: 100vh;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: rgba(12, 12, 24, 0.9);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
 }
 
-#container {
+.topbar h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  letter-spacing: 0.04em;
+}
+
+.topbar-actions {
   display: flex;
-  gap: 20px;
-  align-items: flex-start;
+  gap: 12px;
 }
 
-canvas {
-  background: #000;
+button,
+.file-button {
+  background: linear-gradient(135deg, rgba(255, 123, 192, 0.2), rgba(104, 115, 255, 0.2));
+  border: 1px solid rgba(255, 123, 192, 0.35);
+  border-radius: 999px;
+  padding: 10px 18px;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+
+button:hover,
+.file-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(255, 123, 192, 0.35);
+}
+
+.file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr 320px;
+  gap: 16px;
+  padding: 16px 20px 24px;
+}
+
+.timeline-panel,
+.inspector-panel,
+.stage-panel {
+  background: var(--panel);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.45);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.timeline-panel h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+#routeList {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.route-block {
+  margin-bottom: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.route-block header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.route-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scene-card {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 123, 192, 0.12);
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: border 0.15s ease, background 0.15s ease;
+}
+
+.scene-card.active {
+  border-color: rgba(255, 123, 192, 0.8);
+  background: rgba(255, 123, 192, 0.18);
+}
+
+.scene-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.stage-panel {
+  gap: 16px;
+}
+
+.stage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 480px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: #090912;
+}
+
+.stage-background {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: saturate(1.1);
+  opacity: 0.95;
+}
+
+.scene-instances {
+  position: absolute;
+  inset: 0;
+}
+
+.char-instance {
+  position: absolute;
+  transform-origin: center bottom;
+  cursor: grab;
+  transition: box-shadow 0.12s ease;
+}
+
+.char-instance.dragging {
+  cursor: grabbing;
+}
+
+.char-instance.active {
+  box-shadow: 0 18px 25px rgba(255, 123, 192, 0.25);
+}
+
+.char-instance img {
+  display: block;
+  max-width: none;
+  pointer-events: none;
+}
+
+.char-instance .instance-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+}
+
+.instance-actions button {
+  padding: 6px 10px;
   border-radius: 12px;
-  box-shadow: 0 0 15px #000;
+  background: rgba(12, 12, 24, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+}
+
+.instance-actions button:hover {
+  transform: none;
+  box-shadow: none;
+  background: rgba(12, 12, 24, 0.85);
+}
+
+.inspector {
+  background: rgba(12, 12, 24, 0.55);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.inspector h3 {
+  margin-top: 0;
+}
+
+.inspector label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 10px 0 4px;
+}
+
+.inspector input,
+.inspector textarea,
+.inspector select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 20, 0.7);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.dialogue-block,
+.choice-block {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dialogue-block header,
+.choice-block header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.dialogue-block button,
+.choice-block button {
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(255, 123, 192, 0.2);
+  border: 1px solid rgba(255, 123, 192, 0.3);
+  font-size: 0.8rem;
+}
+
+.dialogue-block button:hover,
+.choice-block button:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 3, 8, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-content {
+  background: var(--panel);
+  border-radius: 24px;
+  padding: 24px;
+  width: min(1100px, 95vw);
+  height: min(90vh, 760px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 45px rgba(0, 0, 0, 0.6);
+}
+
+.overlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.overlay-header button {
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(12, 12, 24, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.editor-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.canvas-wrap {
+  background: rgba(9, 9, 18, 0.8);
+  border-radius: 20px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 #controls {
-  background: #1c1c1c;
-  padding: 20px;
-  border-radius: 12px;
-  width: 320px;
-  height: 800px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
 }
 
-h2 {
-  text-align: center;
-  margin-top: 0;
-  margin-bottom: 20px;
+#categoryList {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.character-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.char-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+
+.char-btn.active {
+  background: rgba(255, 123, 192, 0.4);
+  border-color: rgba(255, 123, 192, 0.8);
 }
 
 .category {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .category h3 {
-  margin-bottom: 5px;
+  margin: 0 0 8px;
   text-transform: capitalize;
 }
 
 .option-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
   gap: 6px;
 }
 
 .option {
-  width: 60px;
-  height: 60px;
-  border-radius: 6px;
-  background: #222;
-  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
   border: 2px solid transparent;
-  cursor: pointer;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border 0.12s ease;
 }
 
 .option img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .option.selected {
-  border-color: #5a8dff;
+  border-color: var(--accent);
 }
 
-button {
-  width: 100%;
-  margin-top: 15px;
-  padding: 10px;
-  background: #333;
-  border: none;
-  border-radius: 8px;
-  color: #fff;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #444;
-}
-
-.character-selector {
-  margin-bottom: 20px;
-}
-
-.char-btn {
-  background: #2b2b2b;
-  color: #ddd;
-  border: 1px solid #444;
-  border-radius: 8px;
-  padding: 6px 12px;
-  margin: 4px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.char-btn:hover {
-  background: #444;
-}
-
-.char-btn.active {
-  background: #0078ff;
-  color: white;
-  border-color: #0078ff;
-}
-
-.eye-colors {
+.editor-actions {
   display: flex;
   gap: 8px;
-  margin: 8px 0 12px 0;
 }
 
-.eye-color-btn {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid #333;
-  cursor: pointer;
-  transition: transform 0.2s, border 0.2s;
+.editor-actions input {
+  flex: 1;
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 10, 20, 0.65);
+  color: var(--text);
 }
 
-.eye-color-btn:hover {
-  transform: scale(1.1);
+.editor-actions button {
+  flex: 1;
 }
 
-.eye-color-btn.active {
-  border: 2px solid #fff;
-  box-shadow: 0 0 5px #fff;
+.editor-actions button.secondary {
+  background: rgba(121, 131, 255, 0.22);
+  border-color: rgba(121, 131, 255, 0.42);
 }
 
-/* Paleta de cores dos olhos (female-pose) */
-.eyes-palette {
-  display: flex;
-  gap: 10px;
-  padding: 8px 12px 0 12px;
-  align-items: center;
-}
-.eyes-palette .swatch {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,.35);
-  cursor: pointer;
-  opacity: .8;
-  transition: transform .12s ease, opacity .12s ease, border-color .12s ease;
-}
-.eyes-palette .swatch:hover { opacity: 1; transform: scale(1.08); border-color: #fff; }
-.eyes-palette .swatch.active { opacity: 1; border-color: #fff; }
-
-
-/* Caixa de saves */
-.save-box {
-  margin-top: 20px;
-  background: #1e1e1e;
+#savedList {
+  max-height: 160px;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
   padding: 10px;
-  border-radius: 8px;
 }
-.save-box h3 {
-  margin-bottom: 8px;
-  color: #fff;
-}
-#saveName {
-  width: 100%;
-  padding: 5px;
-  border-radius: 5px;
-  border: none;
-  margin-bottom: 8px;
-}
-#btnSaveChar {
-  width: 100%;
-  background: #4b8cff;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  padding: 6px;
-  cursor: pointer;
-  margin-bottom: 10px;
-}
-#savedList .saved-item {
+
+.saved-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #2a2a2a;
-  padding: 6px;
-  margin-bottom: 6px;
-  border-radius: 5px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  margin-bottom: 8px;
 }
-#savedList .saved-actions button {
-  margin-left: 5px;
-  background: #3a3a3a;
-  border: none;
-  color: #fff;
-  border-radius: 3px;
-  padding: 3px 6px;
+
+.saved-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.saved-item button {
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(12, 12, 24, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.eyes-palette {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.eyes-palette .swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
   cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
-#savedList .saved-actions button:hover {
-  background: #4b8cff;
+
+.eyes-palette .swatch:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.eyes-palette .swatch.active {
+  border-color: var(--accent);
+  opacity: 1;
+}
+
+@media (max-width: 1200px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-panel,
+  .inspector-panel {
+    order: 2;
+  }
+
+  .stage-panel {
+    order: 1;
+  }
 }
