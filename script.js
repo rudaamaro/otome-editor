@@ -91,6 +91,15 @@ function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+function findFirstSceneEntry(routes = {}) {
+  for (const [routeName, sceneIds] of Object.entries(routes || {})) {
+    if (Array.isArray(sceneIds) && sceneIds.length) {
+      return { route: routeName, sceneId: sceneIds[0] };
+    }
+  }
+  return { route: null, sceneId: null };
+}
+
 function loadImage(src) {
   if (!src) return Promise.resolve(null);
   if (imgCache.has(src)) return imgCache.get(src);
@@ -422,9 +431,8 @@ function loadProject() {
   } else {
     project = defaultProject();
   }
-  const firstRoute = Object.keys(project.routes)[0];
-  const firstScene = project.routes[firstRoute]?.[0];
-  selectedSceneId = firstScene || null;
+  const { sceneId } = findFirstSceneEntry(project.routes || {});
+  selectedSceneId = sceneId;
   previewDialogueId = null;
 }
 
@@ -450,6 +458,7 @@ function buildPlayableHtml(data, options = {}) {
   const stageWidth = widthCandidate > 0 ? Math.max(480, Math.min(960, widthCandidate)) : 960;
   const compactWidth = Math.min(stageWidth, 600);
   const safeProject = sanitizeForScript(JSON.stringify(data));
+  const startScene = findFirstSceneEntry(data.routes || {});
   return `<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -666,12 +675,11 @@ function buildPlayableHtml(data, options = {}) {
     </main>
     <script>
       const project = ${safeProject};
+      const START_ROUTE = ${JSON.stringify(startScene.route)};
+      const START_SCENE_ID = ${JSON.stringify(startScene.sceneId)};
 
       const routes = project.routes || {};
       const scenes = project.scenes || {};
-      const routeNames = Object.keys(routes);
-      const firstRoute = routeNames[0] || null;
-      const firstScene = firstRoute ? routes[firstRoute][0] : null;
 
       const backgroundEl = document.getElementById("background");
       const instanceLayerEl = document.getElementById("instanceLayer");
@@ -686,8 +694,8 @@ function buildPlayableHtml(data, options = {}) {
       const progressStepEl = document.getElementById("progressStep");
 
       const state = {
-        route: firstRoute,
-        sceneId: firstScene,
+        route: START_ROUTE,
+        sceneId: START_SCENE_ID,
         dialogueIndex: 0,
         awaitingChoice: false,
       };
@@ -717,8 +725,11 @@ function buildPlayableHtml(data, options = {}) {
           return;
         }
 
-        progressRouteEl.textContent = 'Rota ' + (scene.route || '');
-        progressSceneEl.textContent = '• ' + (scene.title || '');
+        state.route = scene.route || state.route || START_ROUTE;
+
+        const routeLabel = scene.route || state.route;
+        progressRouteEl.textContent = routeLabel ? 'Rota ' + routeLabel : "";
+        progressSceneEl.textContent = scene.title ? '• ' + scene.title : '';
         const list = routes[scene.route] || [];
         const idx = list.indexOf(scene.id);
         progressStepEl.textContent = list.length ? '• Cena ' + (idx + 1) + ' de ' + list.length : "";
@@ -779,17 +790,19 @@ function buildPlayableHtml(data, options = {}) {
             const last = dialogues[dialogues.length - 1];
             speakerEl.textContent = last?.speaker || "";
             dialogueEl.textContent = last?.text || "";
+          } else if (!nextSceneId) {
+            dialogueEl.textContent = "Fim desta rota.";
           } else {
-            dialogueEl.textContent = nextSceneId ? "" : "Fim desta rota.";
+            dialogueEl.textContent = "Cena finalizada. Avance para a próxima cena.";
           }
           if (nextSceneId) {
             btnNext.textContent = "Próxima cena ▶";
+            btnNext.dataset.action = "next";
+            btnNext.disabled = false;
           } else {
-          dialogueEl.textContent = nextSceneId ? "Cena finalizada. Avance para a próxima cena." : "Fim desta rota.";
-          if (!nextSceneId) {
-          main
             btnNext.textContent = "Reiniciar";
             btnNext.dataset.action = "reset";
+            btnNext.disabled = false;
           }
           return;
         }
@@ -858,8 +871,8 @@ function buildPlayableHtml(data, options = {}) {
       }
 
       function resetGame() {
-        state.route = firstRoute;
-        state.sceneId = firstScene;
+        state.route = START_ROUTE;
+        state.sceneId = START_SCENE_ID;
         state.dialogueIndex = 0;
         state.awaitingChoice = false;
         btnNext.dataset.action = "next";
@@ -870,7 +883,7 @@ function buildPlayableHtml(data, options = {}) {
       btnNext.addEventListener("click", goToNext);
       btnReset.addEventListener("click", resetGame);
 
-      if (!firstScene) {
+      if (!START_SCENE_ID) {
         dialogueEl.textContent = "Crie cenas e exporte novamente para jogar.";
         btnNext.disabled = true;
       } else {
@@ -1170,12 +1183,15 @@ function renderChoiceBlock(scene, choice) {
 function moveSceneToRoute(sceneId, newRoute) {
   const scene = project.scenes[sceneId];
   if (!scene) return;
+  if (scene.route === newRoute) return;
   if (!project.routes[newRoute]) project.routes[newRoute] = [];
   const oldList = project.routes[scene.route];
   project.routes[scene.route] = oldList.filter((id) => id !== sceneId);
+  project.routes[newRoute] = project.routes[newRoute].filter((id) => id !== sceneId);
   project.routes[newRoute].push(sceneId);
   scene.route = newRoute;
   renderRoutes();
+  renderSceneInspector();
 }
 
 // =============================================================
