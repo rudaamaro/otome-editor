@@ -432,16 +432,18 @@ button:hover,
 }
 
 #controls {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
   gap: 16px;
   overflow: hidden;
+  align-content: start;
 }
 
 #categoryList {
   flex: 1;
   overflow-y: auto;
   padding-right: 8px;
+  min-height: 0;
 }
 
 .character-selector {
@@ -505,10 +507,11 @@ button:hover,
 .editor-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .editor-actions input {
-  flex: 1;
+  flex: 1 1 100%;
   border-radius: 999px;
   padding: 10px 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -517,7 +520,7 @@ button:hover,
 }
 
 .editor-actions button {
-  flex: 1;
+  flex: 1 1 48%;
 }
 
 .editor-actions button.secondary {
