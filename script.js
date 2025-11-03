@@ -91,10 +91,13 @@ function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-function findFirstSceneEntry(routes = {}) {
+function findFirstSceneEntry(routes = {}, scenesMap = null) {
+  const sceneLookup = scenesMap || (project && project.scenes) || {};
   for (const [routeName, sceneIds] of Object.entries(routes || {})) {
-    if (Array.isArray(sceneIds) && sceneIds.length) {
-      return { route: routeName, sceneId: sceneIds[0] };
+    if (!Array.isArray(sceneIds) || !sceneIds.length) continue;
+    const match = sceneIds.find((id) => !!sceneLookup[id]);
+    if (match) {
+      return { route: routeName, sceneId: match };
     }
   }
   return { route: null, sceneId: null };
@@ -431,7 +434,7 @@ function loadProject() {
   } else {
     project = defaultProject();
   }
-  const { sceneId } = findFirstSceneEntry(project.routes || {});
+  const { sceneId } = findFirstSceneEntry(project.routes || {}, project.scenes || {});
   selectedSceneId = sceneId;
   previewDialogueId = null;
 }
@@ -463,7 +466,7 @@ function buildPlayableHtml(data, options = {}) {
   const compactWidth = Math.min(stageWidth, 600);
   const textBoxMaxWidth = Math.min(880, Math.max(320, stageWidth - 80));
   const safeProject = sanitizeForScript(JSON.stringify(data));
-  const startScene = findFirstSceneEntry(data.routes || {});
+  const startScene = findFirstSceneEntry(data.routes || {}, data.scenes || {});
   return `<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -732,6 +735,29 @@ function buildPlayableHtml(data, options = {}) {
         awaitingChoice: false,
       };
 
+      function findFirstSceneEntry(routeMap) {
+        for (const [routeName, sceneIds] of Object.entries(routeMap || {})) {
+          if (!Array.isArray(sceneIds) || !sceneIds.length) continue;
+          const match = sceneIds.find((id) => !!scenes[id]);
+          if (match) {
+            return { route: routeName, sceneId: match };
+          }
+        }
+        return { route: null, sceneId: null };
+      }
+
+      function ensureValidSceneSelection() {
+        if (state.sceneId && scenes[state.sceneId]) {
+          state.route = scenes[state.sceneId].route || state.route;
+          return;
+        }
+        const fallback = findFirstSceneEntry(routes);
+        state.route = fallback.route;
+        state.sceneId = fallback.sceneId;
+        state.dialogueIndex = 0;
+        state.awaitingChoice = false;
+      }
+
       function getCurrentScene() {
         return state.sceneId ? scenes[state.sceneId] : null;
       }
@@ -744,13 +770,20 @@ function buildPlayableHtml(data, options = {}) {
       }
 
       function renderScene() {
+        ensureValidSceneSelection();
         const scene = getCurrentScene();
         if (!scene) {
           backgroundEl.style.backgroundImage = "none";
           instanceLayerEl.innerHTML = "";
           speakerEl.textContent = "";
           dialogueEl.textContent = "Nenhuma cena disponível.";
+          choiceListEl.innerHTML = "";
+          choiceListEl.classList.add("hidden");
+          textBoxEl.classList.remove("choices-open");
           btnNext.disabled = true;
+          btnNext.dataset.action = "next";
+          btnNext.textContent = "Próximo ▶";
+          btnReset.disabled = true;
           progressRouteEl.textContent = "";
           progressSceneEl.textContent = "";
           progressStepEl.textContent = "";
@@ -758,6 +791,7 @@ function buildPlayableHtml(data, options = {}) {
         }
 
         state.route = scene.route || state.route || START_ROUTE;
+        btnReset.disabled = false;
 
         const routeLabel = scene.route || state.route;
         progressRouteEl.textContent = routeLabel ? 'Rota ' + routeLabel : "";
@@ -869,6 +903,7 @@ function buildPlayableHtml(data, options = {}) {
       }
 
       function goToNext() {
+        ensureValidSceneSelection();
         const scene = getCurrentScene();
         if (!scene) return;
 
@@ -943,16 +978,40 @@ function buildPlayableHtml(data, options = {}) {
         state.dialogueIndex = 0;
         state.awaitingChoice = false;
         btnNext.dataset.action = "next";
+        ensureValidSceneSelection();
+        if (!state.sceneId) {
+          btnNext.disabled = true;
+          btnReset.disabled = true;
+          speakerEl.textContent = "";
+          dialogueEl.textContent = "Crie cenas e exporte novamente para jogar.";
+          choiceListEl.innerHTML = "";
+          choiceListEl.classList.add("hidden");
+          textBoxEl.classList.remove("choices-open");
+          progressRouteEl.textContent = "";
+          progressSceneEl.textContent = "";
+          progressStepEl.textContent = "";
+          return;
+        }
         btnNext.disabled = false;
+        btnReset.disabled = false;
         renderScene();
       }
 
       btnNext.addEventListener("click", goToNext);
       btnReset.addEventListener("click", resetGame);
 
-      if (!START_SCENE_ID) {
+      ensureValidSceneSelection();
+      if (!state.sceneId) {
         dialogueEl.textContent = "Crie cenas e exporte novamente para jogar.";
         btnNext.disabled = true;
+        btnReset.disabled = true;
+        speakerEl.textContent = "";
+        choiceListEl.innerHTML = "";
+        choiceListEl.classList.add("hidden");
+        textBoxEl.classList.remove("choices-open");
+        progressRouteEl.textContent = "";
+        progressSceneEl.textContent = "";
+        progressStepEl.textContent = "";
       } else {
         renderScene();
       }
