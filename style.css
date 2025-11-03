@@ -157,6 +157,7 @@ button:hover,
 
 .stage-panel {
   gap: 16px;
+  align-items: center;
 }
 
 .stage-toolbar {
@@ -168,8 +169,11 @@ button:hover,
 
 .stage {
   position: relative;
-  flex: 1;
-  min-height: 480px;
+  flex: none;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16 / 9;
+  height: auto;
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.07);
