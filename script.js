@@ -444,10 +444,13 @@ function sanitizeForScript(str) {
     .replace(/\u2029/g, "\\u2029");
 }
 
+
 function buildPlayableHtml(data, options = {}) {
   const widthCandidate = Math.round(options.stageWidth || 0);
   const stageWidth = widthCandidate > 0 ? Math.max(480, Math.min(960, widthCandidate)) : 960;
   const compactWidth = Math.min(stageWidth, 560);
+function buildPlayableHtml(data) {
+  main
   const safeProject = sanitizeForScript(JSON.stringify(data));
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -485,6 +488,8 @@ function buildPlayableHtml(data, options = {}) {
       header {
         width: min(${stageWidth}px, 94vw);
         max-width: ${stageWidth}px;
+        width: min(960px, 94vw);
+        main
         margin: 28px auto 12px;
         display: flex;
         flex-direction: column;
@@ -507,8 +512,11 @@ function buildPlayableHtml(data, options = {}) {
       }
 
       main {
+
         width: min(${stageWidth}px, 94vw);
         max-width: ${stageWidth}px;
+        width: min(960px, 94vw);
+        main
         aspect-ratio: 16 / 9;
         background: #080812;
         border-radius: 26px;
@@ -631,6 +639,8 @@ function buildPlayableHtml(data, options = {}) {
       @media (max-width: 720px) {
         main {
           width: min(${compactWidth}px, 94vw);
+          width: min(600px, 94vw);
+        main
         }
 
         .text-box {
@@ -783,6 +793,9 @@ function buildPlayableHtml(data, options = {}) {
           if (nextSceneId) {
             btnNext.textContent = "Próxima cena ▶";
           } else {
+          dialogueEl.textContent = nextSceneId ? "Cena finalizada. Avance para a próxima cena." : "Fim desta rota.";
+          if (!nextSceneId) {
+          main
             btnNext.textContent = "Reiniciar";
             btnNext.dataset.action = "reset";
           }
@@ -885,6 +898,8 @@ function exportGame() {
   const stageRect = stageEl.getBoundingClientRect();
   const stageWidth = stageRect.width || stageEl.clientWidth || stageEl.offsetWidth;
   const html = buildPlayableHtml(project, { stageWidth });
+  const html = buildPlayableHtml(project);
+  main
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
