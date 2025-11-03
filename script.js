@@ -7,6 +7,10 @@ const instanceInspectorEl = document.getElementById("instanceInspector");
 const stageEl = document.getElementById("stage");
 const stageBgEl = document.getElementById("stageBackground");
 const instancesEl = document.getElementById("sceneInstances");
+const stageTextBoxEl = document.getElementById("stageTextBox");
+const stageSpeakerPreviewEl = document.getElementById("stageSpeaker");
+const stageDialoguePreviewEl = document.getElementById("stageDialogue");
+const stageChoiceListPreviewEl = document.getElementById("stageChoiceList");
 
 const btnCreateRoute = document.getElementById("createRoute");
 const btnCreateScene = document.getElementById("createScene");
@@ -74,6 +78,7 @@ let editorContext = { mode: "standalone" };
 let project = null;
 let selectedSceneId = null;
 let selectedInstanceId = null;
+let previewDialogueId = null;
 
 // =============================================================
 // 📦 Utilidades
@@ -420,6 +425,7 @@ function loadProject() {
   const firstRoute = Object.keys(project.routes)[0];
   const firstScene = project.routes[firstRoute]?.[0];
   selectedSceneId = firstScene || null;
+  previewDialogueId = null;
 }
 
 function persistProject() {
@@ -438,7 +444,13 @@ function sanitizeForScript(str) {
     .replace(/\u2029/g, "\\u2029");
 }
 
+
+function buildPlayableHtml(data, options = {}) {
+  const widthCandidate = Math.round(options.stageWidth || 0);
+  const stageWidth = widthCandidate > 0 ? Math.max(480, Math.min(960, widthCandidate)) : 960;
+  const compactWidth = Math.min(stageWidth, 560);
 function buildPlayableHtml(data) {
+  main
   const safeProject = sanitizeForScript(JSON.stringify(data));
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -474,7 +486,10 @@ function buildPlayableHtml(data) {
       }
 
       header {
+        width: min(${stageWidth}px, 94vw);
+        max-width: ${stageWidth}px;
         width: min(960px, 94vw);
+        main
         margin: 28px auto 12px;
         display: flex;
         flex-direction: column;
@@ -497,7 +512,11 @@ function buildPlayableHtml(data) {
       }
 
       main {
+
+        width: min(${stageWidth}px, 94vw);
+        max-width: ${stageWidth}px;
         width: min(960px, 94vw);
+        main
         aspect-ratio: 16 / 9;
         background: #080812;
         border-radius: 26px;
@@ -619,7 +638,9 @@ function buildPlayableHtml(data) {
 
       @media (max-width: 720px) {
         main {
+          width: min(${compactWidth}px, 94vw);
           width: min(600px, 94vw);
+        main
         }
 
         .text-box {
@@ -762,8 +783,19 @@ function buildPlayableHtml(data) {
         const choices = scene.choices || [];
         if (!choices.length) {
           const nextSceneId = getNextSceneId(scene);
+          if (dialogues.length) {
+            const last = dialogues[dialogues.length - 1];
+            speakerEl.textContent = last?.speaker || "";
+            dialogueEl.textContent = last?.text || "";
+          } else {
+            dialogueEl.textContent = nextSceneId ? "" : "Fim desta rota.";
+          }
+          if (nextSceneId) {
+            btnNext.textContent = "Próxima cena ▶";
+          } else {
           dialogueEl.textContent = nextSceneId ? "Cena finalizada. Avance para a próxima cena." : "Fim desta rota.";
           if (!nextSceneId) {
+          main
             btnNext.textContent = "Reiniciar";
             btnNext.dataset.action = "reset";
           }
@@ -863,7 +895,11 @@ function exportGame() {
     return;
   }
   persistProject();
+  const stageRect = stageEl.getBoundingClientRect();
+  const stageWidth = stageRect.width || stageEl.clientWidth || stageEl.offsetWidth;
+  const html = buildPlayableHtml(project, { stageWidth });
   const html = buildPlayableHtml(project);
+  main
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -900,6 +936,7 @@ function createScene(routeName) {
   };
   project.routes[route].push(id);
   selectedSceneId = id;
+  previewDialogueId = null;
   renderRoutes();
   renderSceneInspector();
   updateStage();
@@ -908,6 +945,7 @@ function createScene(routeName) {
 function selectScene(id) {
   selectedSceneId = id;
   selectedInstanceId = null;
+  previewDialogueId = null;
   renderRoutes();
   renderSceneInspector();
   renderInstanceInspector();
@@ -968,6 +1006,7 @@ function renderSceneInspector() {
   sceneInspectorEl.innerHTML = "";
   if (!scene) {
     sceneInspectorEl.innerHTML = "<p style='color:var(--muted)'>Selecione uma cena para editar.</p>";
+    updateStageDialoguePreview();
     return;
   }
 
@@ -1026,11 +1065,17 @@ function renderSceneInspector() {
     hint.textContent = "Adicione escolhas para criar rotas alternativas.";
     sceneInspectorEl.appendChild(hint);
   }
+
+  updateStageDialoguePreview();
 }
 
 function renderDialogueBlock(scene, dialogue) {
   const block = document.createElement("div");
   block.className = "dialogue-block";
+  block.onclick = (ev) => {
+    if (ev.target.closest("button")) return;
+    setPreviewDialogue(dialogue.id);
+  };
 
   const header = document.createElement("header");
   const label = document.createElement("strong");
@@ -1039,6 +1084,7 @@ function renderDialogueBlock(scene, dialogue) {
   remove.textContent = "Remover";
   remove.onclick = () => {
     scene.dialogues = scene.dialogues.filter((d) => d.id !== dialogue.id);
+    if (previewDialogueId === dialogue.id) previewDialogueId = null;
     renderSceneInspector();
   };
   header.append(label, remove);
@@ -1048,14 +1094,23 @@ function renderDialogueBlock(scene, dialogue) {
   speakerLabel.textContent = "Quem fala";
   const speakerInput = document.createElement("input");
   speakerInput.value = dialogue.speaker;
-  speakerInput.oninput = () => (dialogue.speaker = speakerInput.value);
+  speakerInput.oninput = () => {
+    dialogue.speaker = speakerInput.value;
+    updateStageDialoguePreview();
+  };
+  speakerInput.onfocus = () => setPreviewDialogue(dialogue.id);
 
   const textLabel = document.createElement("label");
   textLabel.textContent = "Texto";
   const textarea = document.createElement("textarea");
   textarea.rows = 3;
   textarea.value = dialogue.text;
-  textarea.oninput = () => (dialogue.text = textarea.value);
+  textarea.oninput = () => {
+    dialogue.text = textarea.value;
+    if (!previewDialogueId) previewDialogueId = dialogue.id;
+    updateStageDialoguePreview();
+  };
+  textarea.onfocus = () => setPreviewDialogue(dialogue.id);
 
   block.append(speakerLabel, speakerInput, textLabel, textarea);
   return block;
@@ -1082,7 +1137,10 @@ function renderChoiceBlock(scene, choice) {
   const textInput = document.createElement("textarea");
   textInput.rows = 2;
   textInput.value = choice.text;
-  textInput.oninput = () => (choice.text = textInput.value);
+  textInput.oninput = () => {
+    choice.text = textInput.value;
+    updateStageDialoguePreview();
+  };
 
   const routeLabel = document.createElement("label");
   routeLabel.textContent = "Rota / Caminho";
@@ -1206,6 +1264,12 @@ function positionInstanceElement(el, instance, stageRect) {
 let dragState = null;
 
 function startDragInstance(ev, instanceId) {
+  if (ev.target.closest(".instance-actions")) {
+    return;
+  }
+  if (typeof ev.button === "number" && ev.button !== 0) {
+    return;
+  }
   ev.preventDefault();
   selectInstance(instanceId);
   const scene = currentScene();
@@ -1337,10 +1401,71 @@ function updateStage() {
   if (!scene) {
     stageBgEl.style.backgroundImage = "";
     instancesEl.innerHTML = "";
+    updateStageDialoguePreview();
     return;
   }
   stageBgEl.style.backgroundImage = scene.background ? `url(${scene.background})` : "";
   renderInstances();
+  updateStageDialoguePreview();
+}
+
+function updateStageDialoguePreview() {
+  if (!stageTextBoxEl || !stageSpeakerPreviewEl || !stageDialoguePreviewEl || !stageChoiceListPreviewEl) {
+    return;
+  }
+  const scene = currentScene();
+  if (!scene) {
+    stageSpeakerPreviewEl.textContent = "";
+    stageDialoguePreviewEl.textContent = "Selecione uma cena para visualizar aqui.";
+    stageChoiceListPreviewEl.innerHTML = "";
+    stageChoiceListPreviewEl.classList.add("hidden");
+    stageTextBoxEl.classList.remove("choices-open");
+    return;
+  }
+
+  const dialogues = scene.dialogues || [];
+  if (previewDialogueId && !dialogues.some((dlg) => dlg.id === previewDialogueId)) {
+    previewDialogueId = dialogues.length ? dialogues[0].id : null;
+  }
+  const preview = previewDialogueId
+    ? dialogues.find((dlg) => dlg.id === previewDialogueId)
+    : dialogues[0];
+
+  if (preview) {
+    stageSpeakerPreviewEl.textContent = preview.speaker || "";
+    stageDialoguePreviewEl.textContent = preview.text?.trim()
+      ? preview.text
+      : "(Texto vazio)";
+  } else {
+    stageSpeakerPreviewEl.textContent = "";
+    stageDialoguePreviewEl.textContent = dialogues.length
+      ? ""
+      : "Use os botões da barra para adicionar diálogos.";
+  }
+
+  const choices = scene.choices || [];
+  stageChoiceListPreviewEl.innerHTML = "";
+  if (choices.length) {
+    stageChoiceListPreviewEl.classList.remove("hidden");
+    stageTextBoxEl.classList.add("choices-open");
+    choices.forEach((choice) => {
+      const chip = document.createElement("span");
+      chip.className = "stage-choice";
+      chip.textContent = choice.text?.trim() ? choice.text : "Escolha sem texto";
+      stageChoiceListPreviewEl.appendChild(chip);
+    });
+    if (!preview) {
+      stageDialoguePreviewEl.textContent = "Pré-visualização das escolhas desta cena.";
+    }
+  } else {
+    stageChoiceListPreviewEl.classList.add("hidden");
+    stageTextBoxEl.classList.remove("choices-open");
+  }
+}
+
+function setPreviewDialogue(dialogueId) {
+  previewDialogueId = dialogueId || null;
+  updateStageDialoguePreview();
 }
 
 // =============================================================
@@ -1353,7 +1478,9 @@ btnExportGame.onclick = () => exportGame();
 btnAddDialogue.onclick = () => {
   const scene = currentScene();
   if (!scene) return alert("Selecione uma cena.");
-  scene.dialogues.push({ id: uid("dlg"), speaker: "", text: "" });
+  const dialogue = { id: uid("dlg"), speaker: "", text: "" };
+  scene.dialogues.push(dialogue);
+  previewDialogueId = dialogue.id;
   renderSceneInspector();
 };
 btnAddChoice.onclick = () => {
