@@ -434,7 +434,10 @@ function loadProject() {
   } else {
     project = defaultProject();
   }
+
   const { sceneId } = findFirstSceneEntry(project.routes || {}, project.scenes || {});
+=======
+  const { sceneId } = findFirstSceneEntry(project.routes || {});
   selectedSceneId = sceneId;
   previewDialogueId = null;
 }
@@ -459,12 +462,14 @@ function sanitizeForScript(str) {
 function buildPlayableHtml(data, options = {}) {
   const widthCandidate = Math.round(options.stageWidth || 0);
   const stageWidth = widthCandidate > 0 ? Math.max(480, Math.min(960, widthCandidate)) : 960;
+  
   const heightCandidate = Math.round(options.stageHeight || 0);
   const defaultHeight = Math.round(stageWidth / (16 / 9));
   const stageHeight = heightCandidate > 0 ? Math.max(270, Math.min(720, heightCandidate)) : defaultHeight;
   const aspectRatio = `${stageWidth} / ${stageHeight}`;
   const compactWidth = Math.min(stageWidth, 600);
   const textBoxMaxWidth = Math.min(880, Math.max(320, stageWidth - 80));
+  
   const safeProject = sanitizeForScript(JSON.stringify(data));
   const startScene = findFirstSceneEntry(data.routes || {}, data.scenes || {});
   return `<!DOCTYPE html>
@@ -664,7 +669,8 @@ function buildPlayableHtml(data, options = {}) {
       }
 
       @media (max-width: 720px) {
-        header {
+        header,
+        main {
           width: min(${compactWidth}px, 94vw);
         }
 
@@ -1012,6 +1018,7 @@ function buildPlayableHtml(data, options = {}) {
         progressRouteEl.textContent = "";
         progressSceneEl.textContent = "";
         progressStepEl.textContent = "";
+        return;
       } else {
         renderScene();
       }
@@ -1029,7 +1036,9 @@ function exportGame() {
   const stageRect = stageEl.getBoundingClientRect();
   const stageWidth = stageRect.width || stageEl.clientWidth || stageEl.offsetWidth;
   const stageHeight = stageRect.height || stageEl.clientHeight || stageEl.offsetHeight;
+  
   const html = buildPlayableHtml(project, { stageWidth, stageHeight });
+
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
