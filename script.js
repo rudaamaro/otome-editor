@@ -91,6 +91,15 @@ function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+function findFirstSceneEntry(routes = {}) {
+  for (const [routeName, sceneIds] of Object.entries(routes || {})) {
+    if (Array.isArray(sceneIds) && sceneIds.length) {
+      return { route: routeName, sceneId: sceneIds[0] };
+    }
+  }
+  return { route: null, sceneId: null };
+}
+
 function loadImage(src) {
   if (!src) return Promise.resolve(null);
   if (imgCache.has(src)) return imgCache.get(src);
@@ -422,9 +431,8 @@ function loadProject() {
   } else {
     project = defaultProject();
   }
-  const firstRoute = Object.keys(project.routes)[0];
-  const firstScene = project.routes[firstRoute]?.[0];
-  selectedSceneId = firstScene || null;
+  const { sceneId } = findFirstSceneEntry(project.routes || {});
+  selectedSceneId = sceneId;
   previewDialogueId = null;
 }
 
@@ -448,10 +456,14 @@ function sanitizeForScript(str) {
 function buildPlayableHtml(data, options = {}) {
   const widthCandidate = Math.round(options.stageWidth || 0);
   const stageWidth = widthCandidate > 0 ? Math.max(480, Math.min(960, widthCandidate)) : 960;
-  const compactWidth = Math.min(stageWidth, 560);
-function buildPlayableHtml(data) {
-  main
+  const heightCandidate = Math.round(options.stageHeight || 0);
+  const defaultHeight = Math.round(stageWidth / (16 / 9));
+  const stageHeight = heightCandidate > 0 ? Math.max(270, Math.min(720, heightCandidate)) : defaultHeight;
+  const aspectRatio = `${stageWidth} / ${stageHeight}`;
+  const compactWidth = Math.min(stageWidth, 600);
+  const textBoxMaxWidth = Math.min(880, Math.max(320, stageWidth - 80));
   const safeProject = sanitizeForScript(JSON.stringify(data));
+  const startScene = findFirstSceneEntry(data.routes || {});
   return `<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -488,12 +500,11 @@ function buildPlayableHtml(data) {
       header {
         width: min(${stageWidth}px, 94vw);
         max-width: ${stageWidth}px;
-        width: min(960px, 94vw);
-        main
         margin: 28px auto 12px;
         display: flex;
         flex-direction: column;
         gap: 6px;
+        padding: 0 20px;
       }
 
       header h1 {
@@ -512,21 +523,26 @@ function buildPlayableHtml(data) {
       }
 
       main {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding: 0 20px 40px;
+      }
 
+      .stage {
+        position: relative;
         width: min(${stageWidth}px, 94vw);
         max-width: ${stageWidth}px;
-        width: min(960px, 94vw);
-        main
-        aspect-ratio: 16 / 9;
-        background: #080812;
-        border-radius: 26px;
+        aspect-ratio: ${aspectRatio};
+        height: auto;
+        background: #090912;
+        border-radius: 22px;
         border: 1px solid rgba(255, 255, 255, 0.06);
         box-shadow: 0 28px 50px rgba(0, 0, 0, 0.55);
-        position: relative;
         overflow: hidden;
       }
 
-      .background {
+      .stage-background {
         position: absolute;
         inset: 0;
         background-size: cover;
@@ -534,79 +550,86 @@ function buildPlayableHtml(data) {
         filter: saturate(1.05);
       }
 
-      .instances {
+      .scene-instances {
         position: absolute;
         inset: 0;
         pointer-events: none;
       }
 
-      .instances .inst {
+      .scene-instances .inst {
         position: absolute;
         transform-origin: center bottom;
       }
 
-      .instances img {
+      .scene-instances img {
         display: block;
         max-width: none;
       }
 
-      .text-box {
+      .stage-overlay {
         position: absolute;
-        left: 50%;
-        bottom: 26px;
-        transform: translateX(-50%);
-        width: calc(100% - 80px);
-        background: rgba(9, 9, 20, 0.85);
+        inset: 0;
+        pointer-events: none;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 0 40px 22px;
+      }
+
+      .stage-textbox {
+        width: 100%;
+        max-width: ${textBoxMaxWidth}px;
+        background: rgba(9, 9, 20, 0.86);
         border-radius: 22px;
         border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 25px 40px rgba(0, 0, 0, 0.45);
+        box-shadow: 0 24px 45px rgba(0, 0, 0, 0.5);
         padding: 18px 22px;
         display: flex;
         flex-direction: column;
         gap: 12px;
-        min-height: 150px;
-        transition: min-height 0.2s ease, transform 0.2s ease;
+        min-height: 140px;
+        transition: transform 0.2s ease, min-height 0.2s ease;
       }
 
-      .text-box.choices-open {
-        min-height: 220px;
-        transform: translate(-50%, -4px);
+      .stage-textbox.choices-open {
+        min-height: 210px;
+        transform: translateY(-6px);
       }
 
-      .speaker {
+      .stage-speaker {
         font-weight: 600;
         letter-spacing: 0.04em;
         color: var(--accent);
       }
 
-      .dialogue {
+      .stage-dialogue {
         font-size: 1rem;
         line-height: 1.5;
         white-space: pre-line;
       }
 
-      .choices {
+      .stage-choice-list {
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
         gap: 10px;
       }
 
-      .choices.hidden {
+      .stage-choice-list.hidden {
         display: none;
       }
 
-      .choices button {
+      .stage-choice-list button {
         padding: 10px 16px;
         border-radius: 14px;
         border: 1px solid rgba(255, 123, 192, 0.35);
-        background: linear-gradient(135deg, rgba(255, 123, 192, 0.18), rgba(104, 115, 255, 0.18));
+        background: linear-gradient(135deg, rgba(255, 123, 192, 0.2), rgba(104, 115, 255, 0.2));
         color: var(--text);
         font-weight: 600;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.38);
         cursor: pointer;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
       }
 
-      .choices button:hover {
+      .stage-choice-list button:hover {
         transform: translateY(-1px);
       }
 
@@ -637,14 +660,19 @@ function buildPlayableHtml(data) {
       }
 
       @media (max-width: 720px) {
-        main {
+        header {
           width: min(${compactWidth}px, 94vw);
-          width: min(600px, 94vw);
-        main
         }
 
-        .text-box {
-          width: calc(100% - 40px);
+        .stage {
+          width: min(${compactWidth}px, 94vw);
+        }
+
+        .stage-overlay {
+          padding: 0 24px 18px;
+        }
+
+        .stage-textbox {
           padding: 16px 18px;
         }
       }
@@ -660,26 +688,29 @@ function buildPlayableHtml(data) {
       </div>
     </header>
     <main>
-      <div id="background" class="background"></div>
-      <div id="instanceLayer" class="instances"></div>
-      <div id="textBox" class="text-box">
-        <div id="speaker" class="speaker"></div>
-        <div id="dialogue" class="dialogue"></div>
-        <div id="choiceList" class="choices hidden"></div>
-        <div class="controls">
-          <button id="btnReset" type="button">🔁 Reiniciar</button>
-          <button id="btnNext" class="primary" type="button">Próximo ▶</button>
+      <div class="stage">
+        <div id="background" class="stage-background"></div>
+        <div id="instanceLayer" class="scene-instances"></div>
+        <div class="stage-overlay">
+          <div id="textBox" class="stage-textbox">
+            <div id="speaker" class="stage-speaker"></div>
+            <div id="dialogue" class="stage-dialogue"></div>
+            <div id="choiceList" class="stage-choice-list hidden"></div>
+            <div class="controls">
+              <button id="btnReset" type="button">🔁 Reiniciar</button>
+              <button id="btnNext" class="primary" type="button">Próximo ▶</button>
+            </div>
+          </div>
         </div>
       </div>
     </main>
     <script>
       const project = ${safeProject};
+      const START_ROUTE = ${JSON.stringify(startScene.route)};
+      const START_SCENE_ID = ${JSON.stringify(startScene.sceneId)};
 
       const routes = project.routes || {};
       const scenes = project.scenes || {};
-      const routeNames = Object.keys(routes);
-      const firstRoute = routeNames[0] || null;
-      const firstScene = firstRoute ? routes[firstRoute][0] : null;
 
       const backgroundEl = document.getElementById("background");
       const instanceLayerEl = document.getElementById("instanceLayer");
@@ -694,8 +725,8 @@ function buildPlayableHtml(data) {
       const progressStepEl = document.getElementById("progressStep");
 
       const state = {
-        route: firstRoute,
-        sceneId: firstScene,
+        route: START_ROUTE,
+        sceneId: START_SCENE_ID,
         dialogueIndex: 0,
         awaitingChoice: false,
       };
@@ -725,8 +756,11 @@ function buildPlayableHtml(data) {
           return;
         }
 
-        progressRouteEl.textContent = 'Rota ' + (scene.route || '');
-        progressSceneEl.textContent = '• ' + (scene.title || '');
+        state.route = scene.route || state.route || START_ROUTE;
+
+        const routeLabel = scene.route || state.route;
+        progressRouteEl.textContent = routeLabel ? 'Rota ' + routeLabel : "";
+        progressSceneEl.textContent = scene.title ? '• ' + scene.title : '';
         const list = routes[scene.route] || [];
         const idx = list.indexOf(scene.id);
         progressStepEl.textContent = list.length ? '• Cena ' + (idx + 1) + ' de ' + list.length : "";
@@ -787,17 +821,19 @@ function buildPlayableHtml(data) {
             const last = dialogues[dialogues.length - 1];
             speakerEl.textContent = last?.speaker || "";
             dialogueEl.textContent = last?.text || "";
+          } else if (!nextSceneId) {
+            dialogueEl.textContent = "Fim desta rota.";
           } else {
-            dialogueEl.textContent = nextSceneId ? "" : "Fim desta rota.";
+            dialogueEl.textContent = "Cena finalizada. Avance para a próxima cena.";
           }
           if (nextSceneId) {
             btnNext.textContent = "Próxima cena ▶";
+            btnNext.dataset.action = "next";
+            btnNext.disabled = false;
           } else {
-          dialogueEl.textContent = nextSceneId ? "Cena finalizada. Avance para a próxima cena." : "Fim desta rota.";
-          if (!nextSceneId) {
-          main
             btnNext.textContent = "Reiniciar";
             btnNext.dataset.action = "reset";
+            btnNext.disabled = false;
           }
           return;
         }
@@ -845,8 +881,41 @@ function buildPlayableHtml(data) {
         }
 
         const dialogues = scene.dialogues || [];
-        if (state.dialogueIndex < dialogues.length) {
+        const hasChoices = (scene.choices || []).length > 0;
+
+        if (dialogues.length && state.dialogueIndex < dialogues.length - 1) {
           state.dialogueIndex += 1;
+          updateDialogue();
+          return;
+        }
+
+        if (dialogues.length && state.dialogueIndex === dialogues.length - 1) {
+          if (hasChoices) {
+            state.dialogueIndex += 1;
+            updateDialogue();
+            return;
+          }
+
+          const nextSceneId = getNextSceneId(scene);
+          if (nextSceneId) {
+            state.sceneId = nextSceneId;
+            state.route = scenes[nextSceneId]?.route || state.route;
+            state.dialogueIndex = 0;
+            state.awaitingChoice = false;
+            renderScene();
+            return;
+          }
+
+          btnNext.dataset.action = "reset";
+          btnNext.textContent = "Reiniciar";
+          btnNext.disabled = false;
+          dialogueEl.textContent = "Fim desta rota.";
+          state.awaitingChoice = false;
+          state.dialogueIndex = dialogues.length;
+          return;
+        }
+
+        if (!dialogues.length && hasChoices && !state.awaitingChoice) {
           updateDialogue();
           return;
         }
@@ -856,18 +925,20 @@ function buildPlayableHtml(data) {
           state.sceneId = nextSceneId;
           state.route = scenes[nextSceneId]?.route || state.route;
           state.dialogueIndex = 0;
+          state.awaitingChoice = false;
           renderScene();
         } else {
           btnNext.dataset.action = "reset";
           btnNext.textContent = "Reiniciar";
           btnNext.disabled = false;
           dialogueEl.textContent = "Fim desta rota.";
+          state.awaitingChoice = false;
         }
       }
 
       function resetGame() {
-        state.route = firstRoute;
-        state.sceneId = firstScene;
+        state.route = START_ROUTE;
+        state.sceneId = START_SCENE_ID;
         state.dialogueIndex = 0;
         state.awaitingChoice = false;
         btnNext.dataset.action = "next";
@@ -878,7 +949,7 @@ function buildPlayableHtml(data) {
       btnNext.addEventListener("click", goToNext);
       btnReset.addEventListener("click", resetGame);
 
-      if (!firstScene) {
+      if (!START_SCENE_ID) {
         dialogueEl.textContent = "Crie cenas e exporte novamente para jogar.";
         btnNext.disabled = true;
       } else {
@@ -897,9 +968,8 @@ function exportGame() {
   persistProject();
   const stageRect = stageEl.getBoundingClientRect();
   const stageWidth = stageRect.width || stageEl.clientWidth || stageEl.offsetWidth;
-  const html = buildPlayableHtml(project, { stageWidth });
-  const html = buildPlayableHtml(project);
-  main
+  const stageHeight = stageRect.height || stageEl.clientHeight || stageEl.offsetHeight;
+  const html = buildPlayableHtml(project, { stageWidth, stageHeight });
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -1180,12 +1250,15 @@ function renderChoiceBlock(scene, choice) {
 function moveSceneToRoute(sceneId, newRoute) {
   const scene = project.scenes[sceneId];
   if (!scene) return;
+  if (scene.route === newRoute) return;
   if (!project.routes[newRoute]) project.routes[newRoute] = [];
   const oldList = project.routes[scene.route];
   project.routes[scene.route] = oldList.filter((id) => id !== sceneId);
+  project.routes[newRoute] = project.routes[newRoute].filter((id) => id !== sceneId);
   project.routes[newRoute].push(sceneId);
   scene.route = newRoute;
   renderRoutes();
+  renderSceneInspector();
 }
 
 // =============================================================
