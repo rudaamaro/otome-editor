@@ -157,6 +157,7 @@ button:hover,
 
 .stage-panel {
   gap: 16px;
+  align-items: center;
 }
 
 .stage-toolbar {
@@ -168,8 +169,11 @@ button:hover,
 
 .stage {
   position: relative;
-  flex: 1;
-  min-height: 480px;
+  flex: none;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16 / 9;
+  height: auto;
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -188,6 +192,78 @@ button:hover,
 .scene-instances {
   position: absolute;
   inset: 0;
+}
+
+.stage-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 40px 22px;
+}
+
+.stage-textbox {
+  width: 100%;
+  max-width: 880px;
+  background: rgba(9, 9, 20, 0.86);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 45px rgba(0, 0, 0, 0.5);
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 140px;
+  transition: transform 0.2s ease, min-height 0.2s ease;
+}
+
+.stage-textbox.choices-open {
+  min-height: 210px;
+  transform: translateY(-6px);
+}
+
+.stage-speaker {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.stage-dialogue {
+  font-size: 1rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.stage-choice-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stage-choice-list.hidden {
+  display: none;
+}
+
+.stage-choice {
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 123, 192, 0.35);
+  background: linear-gradient(135deg, rgba(255, 123, 192, 0.2), rgba(104, 115, 255, 0.2));
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.38);
+}
+
+@media (max-width: 720px) {
+  .stage-overlay {
+    padding: 0 24px 18px;
+  }
+
+  .stage-textbox {
+    padding: 16px 18px;
+  }
 }
 
 .char-instance {
