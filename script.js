@@ -547,7 +547,8 @@ function buildPlayableHtml(data, options = {}) {
         inset: 0;
         background-size: cover;
         background-position: center;
-        filter: saturate(1.05);
+        filter: saturate(1.1);
+        opacity: 0.95;
       }
 
       .scene-instances {
