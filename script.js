@@ -817,7 +817,7 @@ function buildPlayableHtml(data, options = {}) {
           wrap.style.top = String((inst.posY || 0) * 100) + "%";
 
           // Corrige escala para o jogo (mantém proporção do editor)
-          const adjustedScale = (inst.scale || 1) * 0.25; // reduz igual ao editor
+          const adjustedScale = (inst.scale || 1) * 0.75; // reduziu mais um pouco
 
           wrap.style.transform = "translate(-50%, -100%) scale(" + adjustedScale + ")";
 
