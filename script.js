@@ -69,7 +69,7 @@ const imgCache = new Map();
 let saves = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
 
 const renderCanvas = document.createElement("canvas");
-renderCanvas.width = 600;
+renderCanvas.width = 400;
 renderCanvas.height = 800;
 const renderCtx = renderCanvas.getContext("2d");
 
@@ -476,219 +476,215 @@ function buildPlayableHtml(data, options = {}) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Otome Play</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        --bg: #0b0b13;
-        --panel: #141427;
-        --accent: #ff7bc0;
-        --accent-strong: #ff52a8;
-        --text: #f5f5fb;
-        --muted: #8a8aa4;
-        --border: #2a2a3d;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        font-family: "Segoe UI", "Roboto", sans-serif;
-        min-height: 100vh;
-        background: radial-gradient(circle at top, #171730, #080812 60%, #04040a);
-        color: var(--text);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-
-      header {
-        width: min(${stageWidth}px, 94vw);
-        max-width: ${stageWidth}px;
-        margin: 28px auto 12px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        padding: 0 20px;
-      }
-
-      header h1 {
-        margin: 0;
-        font-size: clamp(1.6rem, 2.4vw, 2.2rem);
-        letter-spacing: 0.04em;
-        text-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-      }
-
-      .progress {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        font-size: 0.9rem;
-        color: var(--muted);
-      }
-
-      main {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        padding: 0 20px 40px;
-      }
-
-      .stage {
-        position: relative;
-        width: min(${stageWidth}px, 94vw);
-        max-width: ${stageWidth}px;
-        aspect-ratio: ${aspectRatio};
-        height: auto;
-        background: #090912;
-        border-radius: 22px;
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        box-shadow: 0 28px 50px rgba(0, 0, 0, 0.55);
-        overflow: hidden;
-      }
-
-      .stage-background {
-        position: absolute;
-        inset: 0;
-        background-size: cover;
-        background-position: center;
-        filter: saturate(1.1);
-        opacity: 0.95;
-      }
-
-      .scene-instances {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-      }
-
-      .scene-instances .inst {
-        position: absolute;
-        transform-origin: center bottom;
-      }
-
-      .scene-instances img {
-        display: block;
-        max-width: none;
-      }
-
-      .stage-overlay {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        padding: 0 40px 22px;
-      }
-
-      .stage-textbox {
-        width: 100%;
-        max-width: ${textBoxMaxWidth}px;
-        background: rgba(9, 9, 20, 0.86);
-        border-radius: 22px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 24px 45px rgba(0, 0, 0, 0.5);
-        padding: 18px 22px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        min-height: 140px;
-        transition: transform 0.2s ease, min-height 0.2s ease;
-        pointer-events: auto;
-      }
-
-      .stage-textbox.choices-open {
-        min-height: 210px;
-        transform: translateY(-6px);
-      }
-
-      .stage-textbox * {
-        pointer-events: auto;
-      }
-
-      .stage-speaker {
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        color: var(--accent);
-      }
-
-      .stage-dialogue {
-        font-size: 1rem;
-        line-height: 1.5;
-        white-space: pre-line;
-      }
-
-      .stage-choice-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .stage-choice-list.hidden {
-        display: none;
-      }
-
-      .stage-choice-list button {
-        padding: 10px 16px;
-        border-radius: 14px;
-        border: 1px solid rgba(255, 123, 192, 0.35);
-        background: linear-gradient(135deg, rgba(255, 123, 192, 0.2), rgba(104, 115, 255, 0.2));
-        color: var(--text);
-        font-weight: 600;
-        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.38);
-        cursor: pointer;
-      }
-
-      .stage-choice-list button:hover {
-        transform: translateY(-1px);
-      }
-
-      .controls {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 4px;
-      }
-
-      .controls button {
-        padding: 10px 18px;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(12, 12, 24, 0.7);
-        color: var(--text);
-        font-weight: 600;
-        cursor: pointer;
-      }
-
-      .controls button.primary {
-        background: linear-gradient(135deg, rgba(255, 123, 192, 0.25), rgba(104, 115, 255, 0.25));
-        border-color: rgba(255, 123, 192, 0.35);
-      }
-
-      .controls button:disabled {
-        opacity: 0.6;
-        cursor: default;
-      }
-
-      @media (max-width: 720px) {
-        header,
-        main {
-          width: min(${compactWidth}px, 94vw);
+      <style>
+        :root {
+          color-scheme: dark;
+          --bg: #0f0f17;
+          --panel: #181826;
+          --accent: #ff7bc0;
+          --accent-strong: #ff52a8;
+          --text: #f5f5fb;
+          --muted: #8a8aa4;
+          --border: #2a2a3d;
         }
 
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          margin: 0;
+          font-family: "Segoe UI", "Roboto", sans-serif;
+          background: radial-gradient(circle at top, #1a1a2a, #0c0c12 55%, #05050a);
+          color: var(--text);
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        header {
+          width: min(960px, 94vw);
+          margin: 28px auto 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 0 20px;
+        }
+
+        header h1 {
+          margin: 0;
+          font-size: clamp(1.6rem, 2.4vw, 2.2rem);
+          letter-spacing: 0.04em;
+          text-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+        }
+
+        .progress {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          font-size: 0.9rem;
+          color: var(--muted);
+        }
+
+        main {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          padding: 0 20px 40px;
+        }
+
+        /* === IDÊNTICO AO EDITOR === */
         .stage {
-          width: min(${compactWidth}px, 94vw);
+          position: relative;
+          flex: none;
+          width: 100%;
+          max-width: 960px;
+          aspect-ratio: 16 / 9;
+          height: auto;
+          border-radius: 20px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          background: #090912;
+          box-shadow: 0 20px 35px rgba(0, 0, 0, 0.45);
+        }
+
+        .stage-background {
+          position: absolute;
+          inset: 0;
+          background-size: cover;
+          background-position: center;
+          filter: saturate(1.1);
+          opacity: 0.95;
+        }
+
+        .scene-instances {
+          position: absolute;
+          inset: 0;
+        }
+
+        .scene-instances .inst {
+          position: absolute;
+          transform-origin: center bottom;
+        }
+
+        .scene-instances img {
+          display: block;
+          max-width: none;
         }
 
         .stage-overlay {
-          padding: 0 24px 18px;
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          padding: 0 40px 22px;
         }
 
         .stage-textbox {
-          padding: 16px 18px;
+          width: 100%;
+          max-width: 880px;
+          background: rgba(9, 9, 20, 0.86);
+          border-radius: 22px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 24px 45px rgba(0, 0, 0, 0.5);
+          padding: 18px 22px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          min-height: 140px;
+          transition: transform 0.2s ease, min-height 0.2s ease;
+          pointer-events: auto;
         }
-      }
+
+        .stage-textbox.choices-open {
+          min-height: 210px;
+          transform: translateY(-6px);
+        }
+
+        .stage-speaker {
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          color: var(--accent);
+        }
+
+        .stage-dialogue {
+          font-size: 1rem;
+          line-height: 1.5;
+          white-space: pre-line;
+        }
+
+        .stage-choice-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .stage-choice-list.hidden {
+          display: none;
+        }
+
+        .stage-choice-list button {
+          padding: 10px 16px;
+          border-radius: 14px;
+          border: 1px solid rgba(255, 123, 192, 0.35);
+          background: linear-gradient(135deg, rgba(255, 123, 192, 0.2), rgba(104, 115, 255, 0.2));
+          color: var(--text);
+          font-weight: 600;
+          box-shadow: 0 14px 28px rgba(0, 0, 0, 0.38);
+          cursor: pointer;
+        }
+
+        .stage-choice-list button:hover {
+          transform: translateY(-1px);
+        }
+
+        .controls {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 4px;
+        }
+
+        .controls button {
+          padding: 10px 18px;
+          border-radius: 999px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(12, 12, 24, 0.7);
+          color: var(--text);
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .controls button.primary {
+          background: linear-gradient(135deg, rgba(255, 123, 192, 0.25), rgba(104, 115, 255, 0.25));
+          border-color: rgba(255, 123, 192, 0.35);
+        }
+
+        .controls button:disabled {
+          opacity: 0.6;
+          cursor: default;
+        }
+
+        @media (max-width: 720px) {
+          header,
+          main {
+            width: min(600px, 94vw);
+          }
+
+          .stage {
+            width: min(600px, 94vw);
+          }
+
+          .stage-overlay {
+            padding: 0 24px 18px;
+          }
+
+          .stage-textbox {
+            padding: 16px 18px;
+          }
+        }
     </style>
   </head>
   <body>
@@ -815,9 +811,16 @@ function buildPlayableHtml(data, options = {}) {
         (scene.instances || []).forEach((inst) => {
           const wrap = document.createElement("div");
           wrap.className = "inst";
+
+          // Posição igual ao editor
           wrap.style.left = String((inst.posX || 0) * 100) + "%";
           wrap.style.top = String((inst.posY || 0) * 100) + "%";
-          wrap.style.transform = "translate(-50%, -100%) scale(" + (inst.scale || 1) + ")";
+
+          // Corrige escala para o jogo (mantém proporção do editor)
+          const adjustedScale = (inst.scale || 1) * 0.25; // reduz igual ao editor
+
+          wrap.style.transform = "translate(-50%, -100%) scale(" + adjustedScale + ")";
+
           const img = document.createElement("img");
           img.src = inst.image;
           img.alt = inst.name || "Personagem";
