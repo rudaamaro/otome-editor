@@ -431,6 +431,11 @@ button:hover,
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.canvas-wrap canvas {
+  width: 85%;   /* Reduz a exibição */
+  height: auto; /* Mantém proporção */
+}
+
 #controls {
   display: grid;
   grid-template-rows: auto auto 1fr auto;
